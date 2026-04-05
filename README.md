@@ -1,27 +1,100 @@
-# 💰 Finance Dashboard Backend API
+# Finance Dashboard Backend API
 
-A clean, well-structured RESTful backend for a finance dashboard system built with **Node.js**, **Express**, and **MongoDB**.
+A production-minded REST API for finance operations, analytics, and compliance-aware auditing, built with Node.js, Express, and MongoDB.
 
----
+## What Makes This Assignment Stand Out
 
-## ✨ Unique Feature: Smart Audit Trail System
+This project is not only CRUD.
 
-> Most backends just log _that_ something happened. This one logs _what changed, why it matters, and how risky it is._
+It implements a Smart Audit Trail system that captures:
 
-Every mutation in the system is automatically tracked with:
+- what changed (field-level before/after diff)
+- risk level for each action (scored 0-100)
+- anomaly flags for suspicious behavior
+- human-readable summaries for fast investigation
+- immutable logs for tamper-resistant history
 
-| Feature              | Description                                                                                                                |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Field-level Diff** | Stores only what actually changed (before → after), not the entire document                                                |
-| **Risk Scoring**     | Each action gets an automatic risk score (0–100) based on multiple signals                                                 |
-| **Anomaly Flags**    | Auto-detects: `role_escalation`, `large_amount`, `off_hours_activity`, `failed_authentication`                             |
-| **Human Summaries**  | Plain English description auto-generated per action (e.g. _"Priya changed role of rahul@mail.com from viewer to analyst"_) |
-| **Immutable Logs**   | Audit records are write-once — they cannot be modified or deleted, enforced at the model level                             |
-| **Self-Audit**       | Every user can view their own activity trail via `/api/audit/my-activity`                                                  |
+## At A Glance
 
----
+| Area         | Highlights                                                             |
+| ------------ | ---------------------------------------------------------------------- |
+| Architecture | Layered routes -> controllers -> services -> models                    |
+| Security     | JWT auth, role-based access, Helmet, CORS allowlist, rate limits       |
+| Compliance   | Immutable audit logs, contextual request metadata, self-audit endpoint |
+| Data Safety  | Soft-delete + restore for financial records                            |
+| Performance  | Query-aware in-memory dashboard caching with mutation invalidation     |
+| Quality      | Jest + Supertest integration and unit test coverage                    |
 
-## 🚀 Tech Stack
+## Core Flowcharts
+
+### 1) System Request Pipeline
+
+How an incoming request travels through middleware, authorization, business logic, and error handling.
+
+```mermaid
+flowchart LR
+    A[Client Request] --> B[Express App]
+    B --> C[Helmet + CORS + JSON + Morgan]
+    C --> D[Global API Rate Limit]
+    D --> E[Route Match]
+    E --> F[Auth Middleware]
+    F --> G[Authorize Role]
+    G --> H[Validation Middleware]
+    H --> I[Controller]
+    I --> J[Service Layer]
+    J --> K[MongoDB Models]
+    K --> L[JSON Response]
+    I --> M[Error Middleware]
+    J --> M
+    K --> M
+    M --> N[Standardized Error Response]
+```
+
+### 2) Authentication and Token Lifecycle
+
+How register/login/logout and revoked token checks are enforced.
+
+```mermaid
+flowchart TD
+    A[Register or Login Request] --> B[Validate Payload]
+    B --> C{Credentials and Status Valid?}
+    C -- No --> D[Reject Request]
+    D --> E[Audit LOGIN_FAILED if applicable]
+    C -- Yes --> F[Generate JWT]
+    F --> G[Return Token]
+
+    H[Protected API Request] --> I[Extract Bearer Token]
+    I --> J{Token in Blacklist?}
+    J -- Yes --> K[401 Token Revoked]
+    J -- No --> L[Verify JWT Signature and Expiry]
+    L --> M[Load User + Check Active Status]
+    M --> N{Role Allowed?}
+    N -- No --> O[403 Forbidden]
+    N -- Yes --> P[Controller Execution]
+
+    Q[Logout Request] --> R[Add Token to Blacklist with Expiry]
+    R --> S[Audit LOGOUT]
+    S --> T[Logout Success]
+```
+
+### 3) Financial Record Mutation to Audit Trail
+
+How create/update/delete/restore operations produce auditable, risk-scored events and cache invalidation.
+
+```mermaid
+flowchart TD
+    A[Record Mutation Request] --> B[Validate + Authorize]
+    B --> C[Apply DB Change]
+    C --> D[Capture Before/After State]
+    D --> E[Compute Field Diff]
+    E --> F[Assess Risk Score and Flags]
+    F --> G[Generate Human Summary]
+    G --> H[Persist Immutable Audit Log]
+    H --> I[Invalidate Dashboard Cache Prefix]
+    I --> J[Return API Response]
+```
+
+## Tech Stack
 
 | Layer     | Technology                       |
 | --------- | -------------------------------- |
@@ -32,82 +105,71 @@ Every mutation in the system is automatically tracked with:
 | Security  | Helmet, CORS, express-rate-limit |
 | Testing   | Jest + Supertest                 |
 
----
+## Project Structure
 
-## 📁 Project Structure
-
-```
+```text
 finance-backend/
 ├── src/
 │   ├── config/
-│   │   ├── db.js              # MongoDB connection
-│   │   └── seed.js            # Demo data seeder
+│   │   ├── db.js
+│   │   └── seed.js
 │   ├── controllers/
-│   │   ├── auth.controller.js
-│   │   ├── user.controller.js
-│   │   ├── record.controller.js
-│   │   ├── dashboard.controller.js
-│   │   └── audit.controller.js
+│   ├── lib/
+│   │   ├── cache.js
+│   │   └── tokenBlacklist.js
 │   ├── middleware/
-│   │   ├── auth.middleware.js         # JWT verify + role guard
-│   │   ├── auditContext.middleware.js # Attaches IP, requestId, etc.
-│   │   └── error.middleware.js        # Global error handler
 │   ├── models/
-│   │   ├── user.model.js
-│   │   ├── record.model.js
-│   │   └── audit.model.js     # Immutable audit log schema
 │   ├── routes/
-│   │   ├── auth.routes.js
-│   │   ├── user.routes.js
-│   │   ├── record.routes.js
-│   │   ├── dashboard.routes.js
-│   │   ├── audit.routes.js
-│   │   └── docs.routes.js     # Inline HTML API docs
 │   ├── services/
-│   │   └── audit.service.js   # ⭐ Smart Audit Trail core logic
+│   │   └── audit.service.js
 │   ├── app.js
 │   └── server.js
 ├── tests/
-│   └── audit.service.test.js
 ├── .env.example
 ├── package.json
 └── README.md
 ```
 
----
-
-## ⚙️ Setup & Installation
+## Setup and Installation
 
 ### Prerequisites
 
 - Node.js 18+
-- MongoDB running locally or a MongoDB Atlas URI
+- MongoDB local instance or MongoDB Atlas URI
 
-### Steps
+### Quick Setup
 
 ```bash
-# 1. Clone the repository
 git clone <your-repo-url>
 cd finance-backend
-
-# 2. Install dependencies
 npm install
-
-# 3. Configure environment
 cp .env.example .env
-# Edit .env with your MongoDB URI and JWT secret
-
-# 4. Seed the database with demo data
 npm run seed
-
-# 5. Start the server
-npm run dev        # development (nodemon)
-npm start          # production
+npm run dev
 ```
 
----
+Docs URL after startup:
 
-## 🔑 Test Credentials (after seeding)
+`http://localhost:5000/api/docs`
+
+Note:
+
+- `.env.example` sets `PORT=5000`.
+- server fallback is `8000` if `PORT` is not defined.
+
+## Environment Variables
+
+```env
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/finance_dashboard
+JWT_SECRET=your_super_secret_jwt_key_change_in_production
+JWT_EXPIRES=7d
+NODE_ENV=development
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5000
+CACHE_TTL_SECONDS=120
+```
+
+## Demo Credentials (After Seeding)
 
 | Role    | Email               | Password   |
 | ------- | ------------------- | ---------- |
@@ -115,60 +177,68 @@ npm start          # production
 | Analyst | analyst@finance.com | analyst123 |
 | Viewer  | viewer@finance.com  | viewer123  |
 
----
+## Assignment Requirement Coverage
 
-## ✅ Assignment Requirement Coverage
+| Requirement                   | Status    | Implementation Evidence                                                      |
+| ----------------------------- | --------- | ---------------------------------------------------------------------------- |
+| User and Role Management      | Fully Met | `/api/users/*` admin routes, role/status updates, role guards                |
+| Financial Records Management  | Fully Met | CRUD + filters + pagination + soft-delete/restore in `/api/records/*`        |
+| Dashboard Summary APIs        | Fully Met | `/api/dashboard/*` summary, trends, category breakdown, recent activity      |
+| Access Control Logic          | Fully Met | `authenticate` + `authorize` middleware and route-level RBAC                 |
+| Validation and Error Handling | Fully Met | Input validation middleware, Mongoose validation, centralized error handling |
+| Data Persistence              | Fully Met | MongoDB with Mongoose schemas and indexes                                    |
 
-| Requirement                     | Status       | Implementation Evidence                                                                |
-| ------------------------------- | ------------ | -------------------------------------------------------------------------------------- |
-| 1. User & Role Management       | ✅ Fully Met | `/api/users/*` admin routes, role/status updates, role guard middleware                |
-| 2. Financial Records Management | ✅ Fully Met | Full CRUD + filtering + pagination + soft-delete/restore in `/api/records/*`           |
-| 3. Dashboard Summary APIs       | ✅ Fully Met | `/api/dashboard/*` summary, category breakdown, monthly/weekly trends, recent activity |
-| 4. Access Control Logic         | ✅ Fully Met | `authenticate` + `authorize` middleware and route-level role matrix                    |
-| 5. Validation & Error Handling  | ✅ Fully Met | Validation middleware + Mongoose validation + centralized error handler                |
-| 6. Data Persistence             | ✅ Fully Met | MongoDB with Mongoose models and indexes                                               |
+## Smart Audit Trail Details
 
----
+| Capability       | Implementation                                                                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Field-level Diff | Stores only changed fields in `before`, `after`, and `changedFields`                                                                                    |
+| Risk Scoring     | Heuristic score (0-100), capped at 100                                                                                                                  |
+| Risk Levels      | low, medium, high, critical                                                                                                                             |
+| Anomaly Flags    | Includes `high_risk_action`, `sensitive_action`, `large_amount`, `significant_amount`, `role_escalation`, `off_hours_activity`, `failed_authentication` |
+| Human Summaries  | Action-specific plain-English event summaries                                                                                                           |
+| Immutable Logs   | Audit model blocks update operations via schema pre-hook                                                                                                |
+| Searchable Tags  | Auto-tagging by action, changed fields, and risk level                                                                                                  |
 
-## 📚 API Reference
+## API Reference
 
-Full interactive docs available at: `http://localhost:5000/api/docs`
+Full docs endpoint: `http://localhost:5000/api/docs`
 
 ### Authentication
 
-| Method | Endpoint             | Access | Description                |
-| ------ | -------------------- | ------ | -------------------------- |
-| POST   | `/api/auth/register` | Public | Register as viewer/analyst |
-| POST   | `/api/auth/login`    | Public | Login, receive JWT         |
-| POST   | `/api/auth/logout`   | All    | Logout (audited)           |
-| GET    | `/api/auth/me`       | All    | Get current user           |
+| Method | Endpoint             | Access        | Description                     |
+| ------ | -------------------- | ------------- | ------------------------------- |
+| POST   | `/api/auth/register` | Public        | Register as viewer or analyst   |
+| POST   | `/api/auth/login`    | Public        | Login and receive JWT           |
+| POST   | `/api/auth/logout`   | Authenticated | Logout and revoke current token |
+| GET    | `/api/auth/me`       | Authenticated | Get current user                |
 
 ### User Management
 
-| Method | Endpoint                | Access | Description                         |
-| ------ | ----------------------- | ------ | ----------------------------------- |
-| GET    | `/api/users`            | Admin  | List users (filter by role, status) |
-| POST   | `/api/users`            | Admin  | Create any user                     |
-| GET    | `/api/users/:id`        | Admin  | Get user by ID                      |
-| PATCH  | `/api/users/:id`        | Admin  | Update user name/status             |
-| PATCH  | `/api/users/:id/role`   | Admin  | Change role (triggers risk flag)    |
-| PATCH  | `/api/users/:id/status` | Admin  | Activate/deactivate                 |
-| DELETE | `/api/users/:id`        | Admin  | Permanently delete                  |
+| Method | Endpoint                | Access | Description              |
+| ------ | ----------------------- | ------ | ------------------------ |
+| GET    | `/api/users`            | Admin  | List users               |
+| POST   | `/api/users`            | Admin  | Create user              |
+| GET    | `/api/users/:id`        | Admin  | Get user by ID           |
+| PATCH  | `/api/users/:id`        | Admin  | Update user              |
+| PATCH  | `/api/users/:id/role`   | Admin  | Change role              |
+| PATCH  | `/api/users/:id/status` | Admin  | Activate/deactivate user |
+| DELETE | `/api/users/:id`        | Admin  | Delete user              |
 
 ### Financial Records
 
-| Method | Endpoint                   | Access   | Description                  |
-| ------ | -------------------------- | -------- | ---------------------------- |
-| GET    | `/api/records`             | Viewer+  | List records with filters    |
-| GET    | `/api/records/:id`         | Viewer+  | Get single record            |
-| POST   | `/api/records`             | Analyst+ | Create record                |
-| PATCH  | `/api/records/:id`         | Analyst+ | Update record (diff audited) |
-| DELETE | `/api/records/:id`         | Admin    | Soft delete                  |
-| PATCH  | `/api/records/:id/restore` | Admin    | Restore soft-deleted         |
+| Method | Endpoint                   | Access   | Description                     |
+| ------ | -------------------------- | -------- | ------------------------------- |
+| GET    | `/api/records`             | Viewer+  | List records with query filters |
+| GET    | `/api/records/:id`         | Viewer+  | Get one record                  |
+| POST   | `/api/records`             | Analyst+ | Create record                   |
+| PATCH  | `/api/records/:id`         | Analyst+ | Update record                   |
+| DELETE | `/api/records/:id`         | Admin    | Soft delete                     |
+| PATCH  | `/api/records/:id/restore` | Admin    | Restore soft-deleted record     |
 
-#### Record Filter Query Params
+Record query examples:
 
-```
+```text
 ?type=income|expense
 ?category=salary|food|transport|...
 ?startDate=2024-01-01&endDate=2024-12-31
@@ -179,28 +249,28 @@ Full interactive docs available at: `http://localhost:5000/api/docs`
 
 ### Dashboard Analytics
 
-| Method | Endpoint                            | Access   | Description                  |
-| ------ | ----------------------------------- | -------- | ---------------------------- |
-| GET    | `/api/dashboard/summary`            | Viewer+  | Total income/expense/balance |
-| GET    | `/api/dashboard/category-breakdown` | Viewer+  | Category-wise totals         |
-| GET    | `/api/dashboard/monthly-trends`     | Viewer+  | Month-by-month trends        |
-| GET    | `/api/dashboard/weekly-trends`      | Viewer+  | Week-by-week trends          |
-| GET    | `/api/dashboard/recent-activity`    | Viewer+  | Latest N records             |
-| GET    | `/api/dashboard/top-categories`     | Analyst+ | Top spending categories      |
+| Method | Endpoint                            | Access   | Description                      |
+| ------ | ----------------------------------- | -------- | -------------------------------- |
+| GET    | `/api/dashboard/summary`            | Viewer+  | Income, expense, balance summary |
+| GET    | `/api/dashboard/category-breakdown` | Viewer+  | Category totals                  |
+| GET    | `/api/dashboard/monthly-trends`     | Viewer+  | Monthly trend analytics          |
+| GET    | `/api/dashboard/weekly-trends`      | Viewer+  | Weekly trend analytics           |
+| GET    | `/api/dashboard/recent-activity`    | Viewer+  | Latest record activity           |
+| GET    | `/api/dashboard/top-categories`     | Analyst+ | Top spend categories             |
 
-### Smart Audit Trail
+### Audit APIs
 
-| Method | Endpoint                  | Access | Description                 |
-| ------ | ------------------------- | ------ | --------------------------- |
-| GET    | `/api/audit`              | Admin  | Query all logs with filters |
-| GET    | `/api/audit/:id`          | Admin  | Full log with diff details  |
-| GET    | `/api/audit/risk-summary` | Admin  | Risk analytics & top actors |
-| GET    | `/api/audit/actions`      | Admin  | Available action types      |
-| GET    | `/api/audit/my-activity`  | All    | Your own activity trail     |
+| Method | Endpoint                  | Access        | Description                 |
+| ------ | ------------------------- | ------------- | --------------------------- |
+| GET    | `/api/audit`              | Admin         | Query logs with filters     |
+| GET    | `/api/audit/:id`          | Admin         | Get detailed audit log      |
+| GET    | `/api/audit/risk-summary` | Admin         | Risk analytics summary      |
+| GET    | `/api/audit/actions`      | Admin         | List supported action types |
+| GET    | `/api/audit/my-activity`  | Authenticated | Current user activity feed  |
 
-#### Audit Filter Query Params
+Audit query examples:
 
-```
+```text
 ?action=ROLE_CHANGED
 ?riskLevel=high|critical
 ?userId=<mongoId>
@@ -208,27 +278,43 @@ Full interactive docs available at: `http://localhost:5000/api/docs`
 ?page=1&limit=20
 ```
 
----
-
-## 🛡️ Role Permissions Matrix
+## Role Permissions Matrix
 
 | Action                | Viewer | Analyst | Admin |
 | --------------------- | :----: | :-----: | :---: |
-| View records          |   ✅   |   ✅    |  ✅   |
-| View dashboard        |   ✅   |   ✅    |  ✅   |
-| Create records        |   ❌   |   ✅    |  ✅   |
-| Update records        |   ❌   |   ✅    |  ✅   |
-| Delete records (soft) |   ❌   |   ❌    |  ✅   |
-| Restore records       |   ❌   |   ❌    |  ✅   |
-| Top categories        |   ❌   |   ✅    |  ✅   |
-| Manage users          |   ❌   |   ❌    |  ✅   |
-| Change roles          |   ❌   |   ❌    |  ✅   |
-| View audit logs       |   ❌   |   ❌    |  ✅   |
-| View own activity     |   ✅   |   ✅    |  ✅   |
+| View records          |  Yes   |   Yes   |  Yes  |
+| View dashboard        |  Yes   |   Yes   |  Yes  |
+| Create records        |   No   |   Yes   |  Yes  |
+| Update records        |   No   |   Yes   |  Yes  |
+| Delete records (soft) |   No   |   No    |  Yes  |
+| Restore records       |   No   |   No    |  Yes  |
+| Top categories        |   No   |   Yes   |  Yes  |
+| Manage users          |   No   |   No    |  Yes  |
+| Change roles          |   No   |   No    |  Yes  |
+| View audit logs       |   No   |   No    |  Yes  |
+| View own activity     |  Yes   |   Yes   |  Yes  |
 
----
+## Security Features
 
-## 🧪 Running Tests
+- Password hashing with bcryptjs (12 salt rounds)
+- JWT-based authentication with configurable expiry
+- Immediate logout revocation using token blacklist
+- Helmet security headers
+- CORS allowlist from environment config
+- Global + auth-specific rate limiting
+- Validation middleware + model-level validators
+- Sensitive field masking in diffs and API output
+- Route-level role-based authorization
+
+## Caching Strategy
+
+- Dashboard responses are cached using query-aware keys.
+- Default TTL is controlled by `CACHE_TTL_SECONDS` (120 in `.env.example`).
+- Record mutations (create, update, delete, restore) invalidate `dashboard:` cache keys.
+
+## Testing
+
+Run tests:
 
 ```bash
 npm test
@@ -236,53 +322,35 @@ npm test
 
 Current automated coverage includes:
 
-- Auth integration flows (register, login, logout, revoked token, inactive user)
-- RBAC integration flows (viewer/analyst/admin permissions on records)
-- Smart Audit Service logic tests
+- auth integration tests (register, login, logout revocation, inactive-user checks)
+- RBAC integration tests for records routes
+- audit service unit tests (diff, risk scoring, summary, tag extraction)
 
-Smart Audit tests cover:
+Current gaps to improve next:
 
-- Field-level diff computation
-- Risk scoring and flag detection
-- Summary auto-generation
-- Tag extraction
-- Edge cases (null inputs, password masking, score capping)
+- dashboard endpoint integration tests
+- audit endpoint integration tests
+- broader validation/error-path integration tests
 
----
+## Design Decisions
 
-## 🧠 Design Decisions & Assumptions
+### Soft Delete First
 
-### Soft Delete
+Financial records are soft-deleted (`isDeleted`, `deletedAt`, `deletedBy`) to preserve data integrity and support restore operations.
 
-Records are never permanently deleted by default — they are soft-deleted with `isDeleted: true`, `deletedAt`, and `deletedBy`. This preserves data integrity and allows restoration. A Mongoose pre-query hook automatically excludes deleted records from all queries.
+### Immutable Audit Log
 
-### Audit Immutability
+Audit logs are write-once by schema policy. Update operations are blocked at model level.
 
-The `AuditLog` model uses a Mongoose pre-hook to throw an error if any `update` operation is attempted. Logs are write-once by design, ensuring tamper-proof records.
+### Explainable Risk Scoring
 
-### Risk Scoring
+Risk uses deterministic heuristics (action type, amount, role change, time window, auth failures) for transparent interpretation.
 
-Risk scores are heuristic-based and computed at log time. They are not ML-driven but use multiple meaningful signals (action type, amount threshold, role change direction, time of day, failed auth). This is a practical, explainable approach.
+### Stateless Auth with Revocation
 
-### JWT Authentication
+JWT remains stateless, while logout revocation is handled via blacklist entries tied to token expiry.
 
-JWTs are stateless and expire in 7 days (configurable). Logout now revokes the current token using an in-memory blacklist with expiry-aware checks. For distributed deployments, this can be switched to Redis.
-
-### Self-Registration Restriction
-
-Users cannot self-register as admin. Only existing admins can create admin accounts via `POST /api/users`.
-
-### Rate Limiting
-
-100 requests per 15 minutes per IP are applied to all `/api/` routes, with an additional stricter auth limiter on `/api/auth` endpoints.
-
-### Caching Strategy
-
-Dashboard endpoints use short-lived in-memory caching with query-aware keys. Record create/update/delete/restore operations invalidate dashboard cache keys to ensure fresh analytics.
-
----
-
-## ⚡ 10-Minute Evaluator Quickstart
+## 10-Minute Evaluator Quickstart
 
 ```bash
 npm install
@@ -292,59 +360,14 @@ npm test
 npm run dev
 ```
 
-Suggested validation flow:
+Suggested evaluator flow:
 
-1. Login as viewer and verify read-only behavior on records/dashboard.
-2. Login as analyst and verify create/update record access.
-3. Login as admin and verify delete/restore + user management access.
-4. Call `/api/audit/my-activity` to inspect audit entries.
-5. Logout and verify the same token is rejected immediately.
+1. Login as viewer and verify read-only behavior.
+2. Login as analyst and verify create/update access on records.
+3. Login as admin and verify delete/restore and user management.
+4. Check `/api/audit/my-activity` for self-audit trace.
+5. Logout and verify the same token is rejected.
 
----
-
-## 🔁 Borrowed Improvements (From Comparative Review)
-
-The following patterns were incorporated after comparing another implementation:
-
-- Split rate limiting (global + stricter auth limiter)
-- Summary/dashboard cache with mutation-based invalidation
-
-These were adapted into this codebase while preserving the stronger Smart Audit Trail architecture and existing API design.
-
----
-
-## 🆚 Comparison Summary (Assignment + Friend Project)
-
-This submission was finalized after objective side-by-side review against the assignment rubric and a comparable project.
-
-Why this project is the stronger final submission:
-
-1. Complete core requirement coverage with clear route-level evidence.
-2. Stronger audit/compliance features (field-level diff, risk scoring, immutable logs, self-audit endpoint).
-3. Better evaluator readiness via integration tests and explicit requirement mapping.
-4. Security hardening completed (token revocation, stricter auth throttling, CORS allowlist support, validation middleware).
-
-Areas where the compared project was strong and were adopted here:
-
-1. Split auth limiter pattern.
-2. Caching + invalidation mindset for analytics endpoints.
-
----
-
-## 🔒 Security Features
-
-- Passwords hashed with bcryptjs (salt rounds: 12)
-- JWT-based stateless auth
-- Logout token revocation (blacklist)
-- Helmet for HTTP security headers
-- CORS allowlist via environment variable
-- Global and auth-specific rate limiting
-- Input validation via middleware + Mongoose schema validators
-- Sensitive fields (`password`) excluded from all diffs and responses
-- Role-based middleware on every protected route
-
----
-
-## 📝 License
+## License
 
 MIT
