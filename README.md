@@ -2,6 +2,12 @@
 
 A production-minded REST API for finance operations, analytics, and compliance-aware auditing, built with Node.js, Express, and MongoDB.
 
+## Live Deployment
+
+- Base URL: https://finance-data-processing-gvfo.onrender.com
+- API Docs: https://finance-data-processing-gvfo.onrender.com/api/docs
+- Health Check: https://finance-data-processing-gvfo.onrender.com/health
+
 ## What Makes This Assignment Stand Out
 
 This project is not only CRUD.
@@ -148,9 +154,13 @@ npm run seed
 npm run dev
 ```
 
-Docs URL after startup:
+Docs URL after startup (local):
 
 `http://localhost:5000/api/docs`
+
+Docs URL (deployed):
+
+`https://finance-data-processing-gvfo.onrender.com/api/docs`
 
 Note:
 
@@ -202,7 +212,9 @@ CACHE_TTL_SECONDS=120
 
 ## API Reference
 
-Full docs endpoint: `http://localhost:5000/api/docs`
+Full docs endpoint (deployed): `https://finance-data-processing-gvfo.onrender.com/api/docs`
+
+Local docs endpoint: `http://localhost:5000/api/docs`
 
 ### Authentication
 
