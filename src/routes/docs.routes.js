@@ -1,7 +1,13 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
+const DEPLOYED_BASE_URL =
+  process.env.PUBLIC_BASE_URL ||
+  "https://finance-data-processing-gvfo.onrender.com";
 
-router.get('/', (req, res) => {
+router.get("/", (req, res) => {
+  const proto = req.get("x-forwarded-proto") || req.protocol;
+  const currentBaseUrl = `${proto}://${req.get("host")}`;
+
   res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,6 +40,9 @@ router.get('/', (req, res) => {
     .unique-banner { background: linear-gradient(135deg, #0f4c75, #1b262c); border: 1px solid #38bdf8; border-radius: 10px; padding: 20px 24px; margin-bottom: 32px; }
     .unique-banner h3 { color: #38bdf8; margin-bottom: 8px; }
     .unique-banner p { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; }
+    .links { margin-top: 12px; font-size: 0.88rem; }
+    .links a { color: #7dd3fc; text-decoration: none; }
+    .links a:hover { text-decoration: underline; }
     ul.features { list-style: none; margin-top: 10px; }
     ul.features li::before { content: "✦ "; color: #38bdf8; }
     ul.features li { font-size: 0.88rem; color: #cbd5e1; margin-bottom: 4px; }
@@ -56,59 +65,64 @@ router.get('/', (req, res) => {
       <li>Off-hours detection, role escalation alerts, large-amount flags</li>
       <li>Immutable logs — audit records can never be modified or deleted</li>
     </ul>
+    <div class="links">
+      <div>Live Deployment: <a href="${DEPLOYED_BASE_URL}" target="_blank" rel="noopener noreferrer">${DEPLOYED_BASE_URL}</a></div>
+      <div>Current Docs URL: <a href="${currentBaseUrl}/api/docs" target="_blank" rel="noopener noreferrer">${currentBaseUrl}/api/docs</a></div>
+      <div>Health Check: <a href="${currentBaseUrl}/health" target="_blank" rel="noopener noreferrer">${currentBaseUrl}/health</a></div>
+    </div>
   </div>
 
   <div class="section">
     <h2>🔐 Authentication</h2>
-    ${ep('POST','/api/auth/register','Register a new user (viewer/analyst only)','all')}
-    ${ep('POST','/api/auth/login','Login and receive JWT token','all')}
-    ${ep('POST','/api/auth/logout','Logout (logged in audit trail)','all')}
-    ${ep('GET','/api/auth/me','Get current user profile','all')}
+    ${ep("POST", "/api/auth/register", "Register a new user (viewer/analyst only)", "all")}
+    ${ep("POST", "/api/auth/login", "Login and receive JWT token", "all")}
+    ${ep("POST", "/api/auth/logout", "Logout (logged in audit trail)", "all")}
+    ${ep("GET", "/api/auth/me", "Get current user profile", "all")}
   </div>
 
   <div class="section">
     <h2>👤 User Management</h2>
-    ${ep('GET','/api/users','List all users with filters (status, role, page)','admin')}
-    ${ep('POST','/api/users','Create any user including admin','admin')}
-    ${ep('GET','/api/users/:id','Get user by ID','admin')}
-    ${ep('PATCH','/api/users/:id','Update user name or status','admin')}
-    ${ep('PATCH','/api/users/:id/role','Change user role (triggers risk score)','admin')}
-    ${ep('PATCH','/api/users/:id/status','Activate or deactivate a user','admin')}
-    ${ep('DELETE','/api/users/:id','Permanently delete a user','admin')}
+    ${ep("GET", "/api/users", "List all users with filters (status, role, page)", "admin")}
+    ${ep("POST", "/api/users", "Create any user including admin", "admin")}
+    ${ep("GET", "/api/users/:id", "Get user by ID", "admin")}
+    ${ep("PATCH", "/api/users/:id", "Update user name or status", "admin")}
+    ${ep("PATCH", "/api/users/:id/role", "Change user role (triggers risk score)", "admin")}
+    ${ep("PATCH", "/api/users/:id/status", "Activate or deactivate a user", "admin")}
+    ${ep("DELETE", "/api/users/:id", "Permanently delete a user", "admin")}
   </div>
 
   <div class="section">
     <h2>💰 Financial Records</h2>
-    ${ep('GET','/api/records','List records with filters (type, category, date, amount)','viewer')}
-    ${ep('GET','/api/records/:id','Get single record by ID','viewer')}
-    ${ep('POST','/api/records','Create a new financial record','analyst')}
-    ${ep('PATCH','/api/records/:id','Update a record (field-diff audited)','analyst')}
-    ${ep('DELETE','/api/records/:id','Soft-delete a record (restorable)','admin')}
-    ${ep('PATCH','/api/records/:id/restore','Restore a soft-deleted record','admin')}
+    ${ep("GET", "/api/records", "List records with filters (type, category, date, amount)", "viewer")}
+    ${ep("GET", "/api/records/:id", "Get single record by ID", "viewer")}
+    ${ep("POST", "/api/records", "Create a new financial record", "analyst")}
+    ${ep("PATCH", "/api/records/:id", "Update a record (field-diff audited)", "analyst")}
+    ${ep("DELETE", "/api/records/:id", "Soft-delete a record (restorable)", "admin")}
+    ${ep("PATCH", "/api/records/:id/restore", "Restore a soft-deleted record", "admin")}
   </div>
 
   <div class="section">
     <h2>📊 Dashboard & Analytics</h2>
-    ${ep('GET','/api/dashboard/summary','Total income, expense, net balance, health status','viewer')}
-    ${ep('GET','/api/dashboard/category-breakdown','Category-wise totals by type','viewer')}
-    ${ep('GET','/api/dashboard/monthly-trends','Month-by-month income vs expense trends','viewer')}
-    ${ep('GET','/api/dashboard/weekly-trends','Week-by-week trends','viewer')}
-    ${ep('GET','/api/dashboard/recent-activity','Latest N financial records','viewer')}
-    ${ep('GET','/api/dashboard/top-categories','Top spending or earning categories','analyst')}
+    ${ep("GET", "/api/dashboard/summary", "Total income, expense, net balance, health status", "viewer")}
+    ${ep("GET", "/api/dashboard/category-breakdown", "Category-wise totals by type", "viewer")}
+    ${ep("GET", "/api/dashboard/monthly-trends", "Month-by-month income vs expense trends", "viewer")}
+    ${ep("GET", "/api/dashboard/weekly-trends", "Week-by-week trends", "viewer")}
+    ${ep("GET", "/api/dashboard/recent-activity", "Latest N financial records", "viewer")}
+    ${ep("GET", "/api/dashboard/top-categories", "Top spending or earning categories", "analyst")}
   </div>
 
   <div class="section">
     <h2>🔍 Smart Audit Trail</h2>
-    ${ep('GET','/api/audit','Query all audit logs with filters','admin')}
-    ${ep('GET','/api/audit/:id','Get single audit log with full diff','admin')}
-    ${ep('GET','/api/audit/risk-summary','Risk analytics: breakdown, top risky actors','admin')}
-    ${ep('GET','/api/audit/actions','List all available action types','admin')}
-    ${ep('GET','/api/audit/my-activity','View your own activity trail','all')}
+    ${ep("GET", "/api/audit", "Query all audit logs with filters", "admin")}
+    ${ep("GET", "/api/audit/:id", "Get single audit log with full diff", "admin")}
+    ${ep("GET", "/api/audit/risk-summary", "Risk analytics: breakdown, top risky actors", "admin")}
+    ${ep("GET", "/api/audit/actions", "List all available action types", "admin")}
+    ${ep("GET", "/api/audit/my-activity", "View your own activity trail", "all")}
   </div>
 
   <div class="section">
     <h2>🩺 Health</h2>
-    ${ep('GET','/health','Service health check','all')}
+    ${ep("GET", "/health", "Service health check", "all")}
   </div>
 
 </div>
