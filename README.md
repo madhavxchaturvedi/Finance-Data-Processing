@@ -348,10 +348,3 @@ Areas where the compared project was strong and were adopted here:
 ## 📝 License
 
 MIT
-
-
-```mermaid
-graph TD
-  A[User] --> B[Frontend]
-  B --> C[Backend]
-  C --> D[Database]
